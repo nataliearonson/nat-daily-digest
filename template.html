@@ -150,6 +150,18 @@
     </ul>
   </section>
 
+  <section>
+    <h3>Less Important &amp; Not Urgent</h3>
+    <ul class="later-list">
+      {% for item in less_important %}
+      <li>
+        <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.headline }}</a>
+        <span class="later-source">{{ item.source }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
   <footer>
     Last updated: {{ updated_time }} &middot; {{ source_count }} sources
   </footer>

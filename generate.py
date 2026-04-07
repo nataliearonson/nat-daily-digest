@@ -76,12 +76,13 @@ def curate_with_claude(entries):
 Your job:
 1. Select the 15-20 most important, newsworthy headlines for the TOP HEADLINES section.
 2. Select 10-15 interesting but lower-urgency stories for the WORTH READING LATER section.
-3. Apply a quality filter — exclude or demote stories that are:
+3. Select 8-12 stories for the LESS IMPORTANT AND NOT URGENT section — these are topics a lot of people are talking about or that have cultural buzz, but that have little real-world impact or urgency. Think: celebrity news, viral moments, lighthearted trends, minor sports drama, pop culture. The reader just wants to be aware of what's in the conversation.
+4. Apply a quality filter to sections 1 and 2 — exclude or demote stories that are:
    - Speculative or based on unnamed sources ("could", "might", "some say", "insiders claim")
    - Clickbait or emotionally manipulative
    - Health/science claims not backed by peer-reviewed research or expert consensus
    - Social media rumors dressed as news
-4. Rank top headlines by newsworthiness and real-world impact, across all topics: business, markets, tech, Philly local, US politics, world events, sports, science/health, culture.
+5. Rank top headlines by newsworthiness and real-world impact, across all topics: business, markets, tech, Philly local, US politics, world events, sports, science/health, culture.
 
 Return ONLY valid JSON in this exact format, no other text:
 {
@@ -90,12 +91,15 @@ Return ONLY valid JSON in this exact format, no other text:
   ],
   "worth_reading_later": [
     {"headline": "...", "source": "...", "link": "...", "summary": ""}
+  ],
+  "less_important": [
+    {"headline": "...", "source": "...", "link": "...", "summary": ""}
   ]
 }"""
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=4096,
+        max_tokens=8192,
         temperature=0,
         system=system_prompt,
         messages=[
@@ -111,6 +115,11 @@ Return ONLY valid JSON in this exact format, no other text:
     if raw.startswith("```"):
         raw = raw.split("\n", 1)[1]
         raw = raw.rsplit("```", 1)[0]
+
+    # Extract JSON object robustly
+    start = raw.find("{")
+    end = raw.rfind("}") + 1
+    raw = raw[start:end]
 
     return json.loads(raw)
 
@@ -130,6 +139,7 @@ def render_html(curated, source_count):
         source_count=source_count,
         top_headlines=curated["top_headlines"],
         worth_reading_later=curated["worth_reading_later"],
+        less_important=curated.get("less_important", []),
     )
     return html
 
