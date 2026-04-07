@@ -44,17 +44,30 @@
       padding-bottom: 8px;
       margin-bottom: 24px;
     }
+
+    /* Top headlines */
     .headline-item {
       margin-bottom: 24px;
       display: flex;
-      gap: 16px;
+      gap: 12px;
+      align-items: flex-start;
+      transition: opacity 0.2s;
+    }
+    .headline-check {
+      margin-top: 3px;
+      flex-shrink: 0;
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+      accent-color: #aaa;
     }
     .headline-num {
       font-size: 0.85rem;
       color: #aaa;
-      min-width: 24px;
+      min-width: 20px;
       padding-top: 2px;
       font-family: -apple-system, sans-serif;
+      flex-shrink: 0;
     }
     .headline-body {}
     .headline-body a {
@@ -63,6 +76,7 @@
       color: #1a1a1a;
       text-decoration: none;
       line-height: 1.35;
+      transition: color 0.2s;
     }
     .headline-body a:hover {
       text-decoration: underline;
@@ -72,13 +86,31 @@
       color: #888;
       font-family: -apple-system, sans-serif;
       margin-top: 3px;
+      transition: opacity 0.2s;
     }
     .headline-summary {
       font-size: 0.92rem;
       color: #444;
       margin-top: 5px;
       line-height: 1.5;
+      transition: opacity 0.2s;
     }
+
+    /* Read state */
+    .headline-item.read .headline-body a {
+      font-weight: normal;
+      color: #aaa;
+    }
+    .headline-item.read .headline-meta,
+    .headline-item.read .headline-summary {
+      display: none;
+    }
+    .headline-item.read {
+      opacity: 0.5;
+      margin-bottom: 10px;
+    }
+
+    /* Later lists */
     .later-list {
       list-style: none;
     }
@@ -86,17 +118,28 @@
       padding: 10px 0;
       border-bottom: 1px solid #eee;
       display: flex;
-      justify-content: space-between;
       align-items: baseline;
-      gap: 12px;
+      gap: 10px;
+      transition: opacity 0.2s;
     }
     .later-list li:last-child {
       border-bottom: none;
+    }
+    .later-check {
+      flex-shrink: 0;
+      width: 13px;
+      height: 13px;
+      cursor: pointer;
+      accent-color: #aaa;
+      position: relative;
+      top: 1px;
     }
     .later-list a {
       font-size: 0.97rem;
       color: #1a1a1a;
       text-decoration: none;
+      flex: 1;
+      transition: color 0.2s;
     }
     .later-list a:hover {
       text-decoration: underline;
@@ -107,6 +150,18 @@
       font-family: -apple-system, sans-serif;
       white-space: nowrap;
     }
+
+    /* Read state for later lists */
+    .later-list li.read {
+      opacity: 0.4;
+    }
+    .later-list li.read a {
+      color: #aaa;
+    }
+    .later-list li.read .later-source {
+      display: none;
+    }
+
     footer {
       border-top: 1px solid #ddd;
       padding-top: 16px;
@@ -125,7 +180,8 @@
   <section>
     <h3>Top Headlines</h3>
     {% for item in top_headlines %}
-    <div class="headline-item">
+    <div class="headline-item" data-id="top-{{ loop.index }}">
+      <input class="headline-check" type="checkbox" title="Mark as read">
       <div class="headline-num">{{ loop.index }}</div>
       <div class="headline-body">
         <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.headline }}</a>
@@ -142,7 +198,8 @@
     <h3>Worth Reading Later</h3>
     <ul class="later-list">
       {% for item in worth_reading_later %}
-      <li>
+      <li data-id="later-{{ loop.index }}">
+        <input class="later-check" type="checkbox" title="Mark as read">
         <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.headline }}</a>
         <span class="later-source">{{ item.source }}</span>
       </li>
@@ -154,7 +211,8 @@
     <h3>Less Important &amp; Not Urgent</h3>
     <ul class="later-list">
       {% for item in less_important %}
-      <li>
+      <li data-id="low-{{ loop.index }}">
+        <input class="later-check" type="checkbox" title="Mark as read">
         <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.headline }}</a>
         <span class="later-source">{{ item.source }}</span>
       </li>
@@ -165,5 +223,57 @@
   <footer>
     Last updated: {{ updated_time }} &middot; {{ source_count }} sources
   </footer>
+
+  <script>
+    const DATE_KEY = 'digest-date';
+    const READ_KEY = 'digest-read';
+    const todayDate = {{ date | tojson }};
+
+    // Reset read state if it's a new day's digest
+    if (localStorage.getItem(DATE_KEY) !== todayDate) {
+      localStorage.setItem(DATE_KEY, todayDate);
+      localStorage.setItem(READ_KEY, JSON.stringify([]));
+    }
+
+    function getRead() {
+      return JSON.parse(localStorage.getItem(READ_KEY) || '[]');
+    }
+
+    function saveRead(ids) {
+      localStorage.setItem(READ_KEY, JSON.stringify(ids));
+    }
+
+    function applyRead(id, el, checkbox) {
+      el.classList.add('read');
+      checkbox.checked = true;
+    }
+
+    // Restore read state on load
+    getRead().forEach(id => {
+      const el = document.querySelector(`[data-id="${id}"]`);
+      if (el) {
+        const cb = el.querySelector('input[type="checkbox"]');
+        applyRead(id, el, cb);
+      }
+    });
+
+    // Handle checkbox clicks
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const el = cb.closest('[data-id]');
+        const id = el.dataset.id;
+        const read = getRead();
+        if (cb.checked) {
+          el.classList.add('read');
+          if (!read.includes(id)) read.push(id);
+        } else {
+          el.classList.remove('read');
+          const idx = read.indexOf(id);
+          if (idx > -1) read.splice(idx, 1);
+        }
+        saveRead(read);
+      });
+    });
+  </script>
 </body>
 </html>
