@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Digest — {{ date }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      background: #fafaf8;
+      color: #1a1a1a;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+    header {
+      border-bottom: 2px solid #1a1a1a;
+      padding-bottom: 16px;
+      margin-bottom: 32px;
+    }
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: normal;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #555;
+    }
+    header h2 {
+      font-size: 1.9rem;
+      font-weight: bold;
+      margin-top: 4px;
+    }
+    section {
+      margin-bottom: 48px;
+    }
+    section h3 {
+      font-size: 0.8rem;
+      font-weight: bold;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #888;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 8px;
+      margin-bottom: 24px;
+    }
+    .headline-item {
+      margin-bottom: 24px;
+      display: flex;
+      gap: 16px;
+    }
+    .headline-num {
+      font-size: 0.85rem;
+      color: #aaa;
+      min-width: 24px;
+      padding-top: 2px;
+      font-family: -apple-system, sans-serif;
+    }
+    .headline-body {}
+    .headline-body a {
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: #1a1a1a;
+      text-decoration: none;
+      line-height: 1.35;
+    }
+    .headline-body a:hover {
+      text-decoration: underline;
+    }
+    .headline-meta {
+      font-size: 0.78rem;
+      color: #888;
+      font-family: -apple-system, sans-serif;
+      margin-top: 3px;
+    }
+    .headline-summary {
+      font-size: 0.92rem;
+      color: #444;
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+    .later-list {
+      list-style: none;
+    }
+    .later-list li {
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .later-list li:last-child {
+      border-bottom: none;
+    }
+    .later-list a {
+      font-size: 0.97rem;
+      color: #1a1a1a;
+      text-decoration: none;
+    }
+    .later-list a:hover {
+      text-decoration: underline;
+    }
+    .later-source {
+      font-size: 0.75rem;
+      color: #aaa;
+      font-family: -apple-system, sans-serif;
+      white-space: nowrap;
+    }
+    footer {
+      border-top: 1px solid #ddd;
+      padding-top: 16px;
+      font-size: 0.78rem;
+      color: #aaa;
+      font-family: -apple-system, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Your Daily Digest</h1>
+    <h2>{{ date }}</h2>
+  </header>
+
+  <section>
+    <h3>Top Headlines</h3>
+    {% for item in top_headlines %}
+    <div class="headline-item">
+      <div class="headline-num">{{ loop.index }}</div>
+      <div class="headline-body">
+        <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.headline }}</a>
+        <div class="headline-meta">{{ item.source }}</div>
+        {% if item.summary %}
+        <div class="headline-summary">{{ item.summary }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section>
+    <h3>Worth Reading Later</h3>
+    <ul class="later-list">
+      {% for item in worth_reading_later %}
+      <li>
+        <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.headline }}</a>
+        <span class="later-source">{{ item.source }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <footer>
+    Last updated: {{ updated_time }} &middot; {{ source_count }} sources
+  </footer>
+</body>
+</html>
