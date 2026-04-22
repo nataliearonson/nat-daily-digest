@@ -124,6 +124,17 @@ Return ONLY valid JSON in this exact format, no other text:
     return json.loads(raw)
 
 
+DAILY_QUOTES = {
+    0: ("The only way to do great work is to love what you do.", "Steve Jobs"),
+    1: ("The future belongs to those who believe in the beauty of their dreams.", "Eleanor Roosevelt"),
+    2: ("Success is not final, failure is not fatal: it is the courage to continue that counts.", "Winston Churchill"),
+    3: ("Believe you can and you're halfway there.", "Theodore Roosevelt"),
+    4: ("The best way to predict the future is to create it.", "Peter Drucker"),
+    5: ("Happiness is not something ready made. It comes from your own actions.", "Dalai Lama"),
+    6: ("What you get by achieving your goals is not as important as what you become by achieving your goals.", "Zig Ziglar"),
+}
+
+
 def render_html(curated, source_count):
     env = Environment(loader=FileSystemLoader("."))
     template = env.get_template("template.html")
@@ -132,11 +143,14 @@ def render_html(curated, source_count):
     now = datetime.now(tz=et)
     date_str = now.strftime("%A, %B %-d, %Y")
     time_str = now.strftime("%-I:%M %p ET")
+    quote_text, quote_author = DAILY_QUOTES[now.weekday()]
 
     html = template.render(
         date=date_str,
         updated_time=time_str,
         source_count=source_count,
+        quote_text=quote_text,
+        quote_author=quote_author,
         top_headlines=curated["top_headlines"],
         worth_reading_later=curated["worth_reading_later"],
         less_important=curated.get("less_important", []),
