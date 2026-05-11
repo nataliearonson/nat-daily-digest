@@ -1,8 +1,9 @@
 import os
 import json
 import socket
+import time as time_module
 import feedparser
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from jinja2 import Environment, FileSystemLoader
@@ -12,6 +13,20 @@ from sources import FEEDS
 
 MAX_ENTRIES_PER_FEED = 5
 FETCH_TIMEOUT = 10
+MAX_AGE_DAYS = 5
+RECENT_HOURS = 48
+
+
+def parse_entry_date(entry):
+    """Return the entry's published/updated time as a UTC datetime, or None."""
+    for field in ("published_parsed", "updated_parsed"):
+        t = entry.get(field)
+        if t:
+            try:
+                return datetime.fromtimestamp(time_module.mktime(t), tz=timezone.utc)
+            except Exception:
+                pass
+    return None
 
 
 def fetch_feed(feed):
@@ -19,6 +34,8 @@ def fetch_feed(feed):
     try:
         parsed = feedparser.parse(feed["url"])
         entries = []
+        now_utc = datetime.now(tz=timezone.utc)
+        cutoff = now_utc - timedelta(days=MAX_AGE_DAYS)
         for entry in parsed.entries[:MAX_ENTRIES_PER_FEED]:
             title = entry.get("title", "").strip()
             link = entry.get("link", "").strip()
@@ -27,12 +44,26 @@ def fetch_feed(feed):
             import re
             summary = re.sub(r"<[^>]+>", "", summary).strip()
             summary = summary[:300] if summary else ""
+
+            pub_dt = parse_entry_date(entry)
+            # Drop anything older than MAX_AGE_DAYS
+            if pub_dt and pub_dt < cutoff:
+                continue
+
+            age_label = ""
+            if pub_dt:
+                age_hours = (now_utc - pub_dt).total_seconds() / 3600
+                if age_hours > RECENT_HOURS:
+                    days = int(age_hours // 24)
+                    age_label = f"{days} days ago"
+
             if title and link:
                 entries.append({
                     "headline": title,
                     "link": link,
                     "summary": summary,
                     "source": feed["name"],
+                    "age_label": age_label,
                 })
         return entries
     except Exception as e:
@@ -169,6 +200,12 @@ def main():
     print("Curating with Claude...")
     curated = curate_with_claude(entries)
     print(f"Top headlines: {len(curated['top_headlines'])}, Worth reading later: {len(curated['worth_reading_later'])}")
+
+    # Re-attach age_label from original entries (Claude doesn't see it)
+    age_map = {e["link"]: e.get("age_label", "") for e in entries}
+    for section in ("top_headlines", "worth_reading_later", "less_important"):
+        for item in curated.get(section, []):
+            item["age_label"] = age_map.get(item.get("link", ""), "")
 
     html = render_html(curated, source_count=len(FEEDS))
 
