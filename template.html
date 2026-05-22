@@ -196,6 +196,40 @@
   </section>
 
   <section>
+    <h3>Philadelphia &amp; Pennsylvania</h3>
+    {% for item in philly_pa %}
+    <div class="headline-item" data-id="philly-{{ loop.index }}">
+      <input class="headline-check" type="checkbox" title="Mark as read">
+      <div class="headline-num">{{ loop.index }}</div>
+      <div class="headline-body">
+        <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.headline }}{% if item.age_label %} <span style="color: #b85c00; font-size: 0.85rem; font-weight: normal; font-family: -apple-system, sans-serif;">[{{ item.age_label }}]</span>{% endif %}</a>
+        <div class="headline-meta">{{ item.source }}</div>
+        {% if item.summary %}
+        <div class="headline-summary">{{ item.summary }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section>
+    <h3>Education &amp; Technology</h3>
+    {% for item in education_tech %}
+    <div class="headline-item" data-id="edutech-{{ loop.index }}">
+      <input class="headline-check" type="checkbox" title="Mark as read">
+      <div class="headline-num">{{ loop.index }}</div>
+      <div class="headline-body">
+        <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.headline }}{% if item.age_label %} <span style="color: #b85c00; font-size: 0.85rem; font-weight: normal; font-family: -apple-system, sans-serif;">[{{ item.age_label }}]</span>{% endif %}{% if item.overlap_label %} <span style="color: #2a6f97; font-size: 0.85rem; font-weight: normal; font-family: -apple-system, sans-serif;">[also in {{ item.overlap_label }}]</span>{% endif %}</a>
+        <div class="headline-meta">{{ item.source }}</div>
+        {% if item.summary %}
+        <div class="headline-summary">{{ item.summary }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section>
     <h3>Worth Reading Later</h3>
     <ul class="later-list">
       {% for item in worth_reading_later %}

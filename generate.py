@@ -106,18 +106,26 @@ def curate_with_claude(entries):
 
 Your job:
 1. Select the 15-20 most important, newsworthy headlines for the TOP HEADLINES section.
-2. Select 10-15 interesting but lower-urgency stories for the WORTH READING LATER section.
-3. Select 8-12 stories for the LESS IMPORTANT AND NOT URGENT section — these are topics a lot of people are talking about or that have cultural buzz, but that have little real-world impact or urgency. Think: celebrity news, viral moments, lighthearted trends, minor sports drama, pop culture. The reader just wants to be aware of what's in the conversation.
-4. Apply a quality filter to sections 1 and 2 — exclude or demote stories that are:
+2. Select 5-10 Philadelphia or Pennsylvania-specific headlines for the PHILADELPHIA & PA section. These can be any topic (politics, local news, business, sports, culture, etc.) as long as they are PA/Philly focused. Do NOT duplicate items already chosen for TOP HEADLINES.
+3. Select 5-10 education or technology headlines for the EDUCATION & TECHNOLOGY section. Include US and international stories about schools, universities, edtech, AI, software, hardware, internet, cybersecurity, scientific computing, etc. These MAY overlap with items in other sections — the overlap will be labeled automatically, so pick the best edu/tech items even if they appear elsewhere.
+4. Select 10-15 interesting but lower-urgency stories for the WORTH READING LATER section.
+5. Select 8-12 stories for the LESS IMPORTANT AND NOT URGENT section — these are topics a lot of people are talking about or that have cultural buzz, but that have little real-world impact or urgency. Think: celebrity news, viral moments, lighthearted trends, minor sports drama, pop culture. The reader just wants to be aware of what's in the conversation.
+6. Apply a quality filter to sections 1, 2, 3, and 4 — exclude or demote stories that are:
    - Speculative or based on unnamed sources ("could", "might", "some say", "insiders claim")
    - Clickbait or emotionally manipulative
    - Health/science claims not backed by peer-reviewed research or expert consensus
    - Social media rumors dressed as news
-5. Rank top headlines by newsworthiness and real-world impact, across all topics: business, markets, tech, Philly local, US politics, world events, sports, science/health, culture.
+7. Rank top headlines by newsworthiness and real-world impact, across all topics: business, markets, tech, Philly local, US politics, world events, sports, science/health, culture.
 
 Return ONLY valid JSON in this exact format, no other text:
 {
   "top_headlines": [
+    {"headline": "...", "source": "...", "link": "...", "summary": "one sentence, plain text"}
+  ],
+  "philly_pa": [
+    {"headline": "...", "source": "...", "link": "...", "summary": "one sentence, plain text"}
+  ],
+  "education_tech": [
     {"headline": "...", "source": "...", "link": "...", "summary": "one sentence, plain text"}
   ],
   "worth_reading_later": [
@@ -183,6 +191,8 @@ def render_html(curated, source_count):
         quote_text=quote_text,
         quote_author=quote_author,
         top_headlines=curated["top_headlines"],
+        philly_pa=curated.get("philly_pa", []),
+        education_tech=curated.get("education_tech", []),
         worth_reading_later=curated["worth_reading_later"],
         less_important=curated.get("less_important", []),
     )
@@ -203,9 +213,26 @@ def main():
 
     # Re-attach age_label from original entries (Claude doesn't see it)
     age_map = {e["link"]: e.get("age_label", "") for e in entries}
-    for section in ("top_headlines", "worth_reading_later", "less_important"):
+    all_sections = ("top_headlines", "philly_pa", "education_tech", "worth_reading_later", "less_important")
+    for section in all_sections:
         for item in curated.get(section, []):
             item["age_label"] = age_map.get(item.get("link", ""), "")
+
+    # Label Education & Technology items that also appear in another section
+    section_display_names = {
+        "top_headlines": "Top Headlines",
+        "philly_pa": "Philadelphia & PA",
+        "worth_reading_later": "Worth Reading Later",
+        "less_important": "Less Important",
+    }
+    link_to_section = {}
+    for key, label in section_display_names.items():
+        for item in curated.get(key, []):
+            link = item.get("link", "")
+            if link and link not in link_to_section:
+                link_to_section[link] = label
+    for item in curated.get("education_tech", []):
+        item["overlap_label"] = link_to_section.get(item.get("link", ""), "")
 
     html = render_html(curated, source_count=len(FEEDS))
 
